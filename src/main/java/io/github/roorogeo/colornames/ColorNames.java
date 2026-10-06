@@ -1,8 +1,8 @@
 package io.github.roorogeo.colornames;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -18,6 +18,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
+import net.minecraft.world.scores.TeamColor;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -33,9 +34,7 @@ public class ColorNames implements ModInitializer {
 
 	private static final String TEAM_PREFIX = "namecolor_";
 	private static final int BUTTONS_PER_ROW = 4;
-	private static final List<ChatFormatting> COLORS = Arrays.stream(ChatFormatting.values())
-			.filter(ChatFormatting::isColor)
-			.toList();
+	private static final List<TeamColor> COLORS = TeamColor.VALUES;
 
 	@Override
 	public void onInitialize() {
@@ -46,8 +45,8 @@ public class ColorNames implements ModInitializer {
 		LiteralArgumentBuilder<CommandSourceStack> color = Commands.literal("color")
 				.executes(context -> openMenu(context.getSource()));
 
-		for (ChatFormatting format : COLORS) {
-			color.then(Commands.literal(format.getName())
+		for (TeamColor format : COLORS) {
+			color.then(Commands.literal(format.getSerializedName())
 					.executes(context -> setColor(context.getSource(), format)));
 		}
 
@@ -59,7 +58,7 @@ public class ColorNames implements ModInitializer {
 	private static int openMenu(CommandSourceStack source) throws CommandSyntaxException {
 		ServerPlayer player = source.getPlayerOrException();
 		String name = player.getScoreboardName();
-		ChatFormatting current = currentColor(source, name);
+		TeamColor current = currentColor(source, name);
 
 		player.sendSystemMessage(Component.literal("------- Choose your name color -------").withStyle(ChatFormatting.GOLD));
 
@@ -85,7 +84,7 @@ public class ColorNames implements ModInitializer {
 
 		MutableComponent currentText = current == null
 				? Component.literal(name)
-				: Component.literal(name).withStyle(current);
+				: colored(name, current);
 
 		player.sendSystemMessage(Component.literal("Current: ").withStyle(ChatFormatting.GRAY)
 				.append(currentText)
@@ -95,22 +94,22 @@ public class ColorNames implements ModInitializer {
 		return 1;
 	}
 
-	private static MutableComponent colorButton(ChatFormatting format, String playerName, boolean selected) {
+	private static MutableComponent colorButton(TeamColor format, String playerName, boolean selected) {
 		String label = (selected ? "✔ " : "") + prettyName(format);
 
 		return Component.literal("[" + label + "]").withStyle(style -> style
-				.withColor(format)
+				.withColor(format.textColor())
 				.withBold(selected)
-				.withClickEvent(new ClickEvent.RunCommand("/name color " + format.getName()))
+				.withClickEvent(new ClickEvent.RunCommand("/name color " + format.getSerializedName()))
 				.withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to set your name to ")
-						.append(Component.literal(playerName).withStyle(format)))));
+						.append(colored(playerName, format)))));
 	}
 
-	private static int setColor(CommandSourceStack source, ChatFormatting format) throws CommandSyntaxException {
+	private static int setColor(CommandSourceStack source, TeamColor format) throws CommandSyntaxException {
 		ServerPlayer player = source.getPlayerOrException();
 		String name = player.getScoreboardName();
 		Scoreboard scoreboard = source.getServer().getScoreboard();
-		String teamName = TEAM_PREFIX + format.getName();
+		String teamName = TEAM_PREFIX + format.getSerializedName();
 
 		PlayerTeam team = scoreboard.getPlayerTeam(teamName);
 
@@ -121,11 +120,11 @@ public class ColorNames implements ModInitializer {
 			team.setSeeFriendlyInvisibles(false);
 		}
 
-		team.setColor(format);
+		team.setColor(Optional.of(format));
 		scoreboard.addPlayerToTeam(name, team);
 
 		source.sendSuccess(() -> Component.literal("Your name color is now ").withStyle(ChatFormatting.GRAY)
-				.append(Component.literal(name).withStyle(format)), false);
+				.append(colored(name, format)), false);
 		return 1;
 	}
 
@@ -145,20 +144,24 @@ public class ColorNames implements ModInitializer {
 		return 1;
 	}
 
-	private static ChatFormatting currentColor(CommandSourceStack source, String playerName) {
+	private static TeamColor currentColor(CommandSourceStack source, String playerName) {
 		PlayerTeam team = source.getServer().getScoreboard().getPlayersTeam(playerName);
 
 		if (team == null || !team.getName().startsWith(TEAM_PREFIX)) {
 			return null;
 		}
 
-		return team.getColor();
+		return team.getColor().orElse(null);
 	}
 
-	private static String prettyName(ChatFormatting format) {
+	private static MutableComponent colored(String text, TeamColor color) {
+		return Component.literal(text).withStyle(style -> style.withColor(color.textColor()));
+	}
+
+	private static String prettyName(TeamColor format) {
 		StringBuilder builder = new StringBuilder();
 
-		for (String word : format.getName().split("_")) {
+		for (String word : format.getSerializedName().split("_")) {
 			if (!builder.isEmpty()) {
 				builder.append(' ');
 			}
