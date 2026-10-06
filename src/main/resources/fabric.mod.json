@@ -1,0 +1,25 @@
+{
+	"schemaVersion": 1,
+	"id": "colornames",
+	"version": "${version}",
+	"name": "Color Names",
+	"description": "Lets players pick their name color from a clickable chat menu with /name color.",
+	"authors": [
+		"roorogeo"
+	],
+	"contact": {
+		"sources": "https://github.com/roorogeo/color-names"
+	},
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"io.github.roorogeo.colornames.ColorNames"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~26.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
