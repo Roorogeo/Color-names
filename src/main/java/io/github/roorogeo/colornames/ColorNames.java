@@ -15,15 +15,14 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.scores.TeamColor;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 
 /**
  * Adds {@code /name color}, which shows a clickable chat menu of every name color.
@@ -41,8 +40,10 @@ public class ColorNames implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) -> register(dispatcher));
-		ServerLifecycleEvents.SERVER_STARTING.register(TabListColors::setServer);
-		ServerLifecycleEvents.SERVER_STOPPED.register(server -> TabListColors.setServer(null));
+
+		if (FabricLoader.getInstance().isModLoaded("placeholder-api")) {
+			PlaceholderCompat.register();
+		}
 	}
 
 	private static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -126,7 +127,6 @@ public class ColorNames implements ModInitializer {
 
 		team.setColor(Optional.of(format));
 		scoreboard.addPlayerToTeam(name, team);
-		refreshTabList(source, player);
 
 		source.sendSuccess(() -> Component.literal("Your name color is now ").withStyle(ChatFormatting.GRAY)
 				.append(colored(name, format)), false);
@@ -145,7 +145,6 @@ public class ColorNames implements ModInitializer {
 		}
 
 		scoreboard.removePlayerFromTeam(name, team);
-		refreshTabList(source, player);
 		source.sendSuccess(() -> Component.literal("Your name color has been reset.").withStyle(ChatFormatting.GRAY), false);
 		return 1;
 	}
@@ -165,13 +164,7 @@ public class ColorNames implements ModInitializer {
 		return team.getColor().orElse(null);
 	}
 
-	/** Resends the player's tab list name so everyone sees the new color right away. */
-	private static void refreshTabList(CommandSourceStack source, ServerPlayer player) {
-		source.getServer().getPlayerList().broadcastAll(
-				new ClientboundPlayerInfoUpdatePacket(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME, player));
-	}
-
-	private static MutableComponent colored(String text, TeamColor color) {
+	static MutableComponent colored(String text, TeamColor color) {
 		return Component.literal(text).withStyle(style -> style.withColor(color.textColor()));
 	}
 
