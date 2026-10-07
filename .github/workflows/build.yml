@@ -5,23 +5,4 @@ jobs:
   probe:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-java@v5
-        with:
-          java-version: '25'
-          distribution: 'microsoft'
-      - run: chmod +x ./gradlew && (./gradlew compileJava -q || true)
-      - name: dump classes
-        run: |
-          for j in $(find ~/.gradle/caches .gradle -name '*.jar' 2>/dev/null | grep -i minecraft | grep -v sources); do
-            if unzip -l "$j" | grep -q 'net/minecraft/ChatFormatting.class'; then JAR=$j; break; fi
-          done
-          echo "JAR=$JAR"
-          unzip -l "$JAR" | grep -E 'TeamColor|scores/(PlayerTeam|Team|Scoreboard)\.class|chat/(Style|TextColor)\.class' 
-          for c in $(unzip -l "$JAR" | grep -oE 'net/minecraft/[A-Za-z/]*TeamColor[A-Za-z$]*\.class'); do javap -cp "$JAR" "${c%.class}"; done
-          P=net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket
-          javap -p -cp "$JAR" "$P\$Entry" "$P\$Action" net.minecraft.server.network.ServerCommonPacketListenerImpl net.minecraft.server.network.ServerGamePacketListenerImpl net.minecraft.network.Connection | grep -vE 'lambda\$'
-          javap -cp "$JAR" net.minecraft.server.level.ServerPlayer | grep -iE 'tablist|displayname|class '
-          javap -cp "$JAR" net.minecraft.server.players.PlayerList | grep -iE 'broadcast|getPlayer\('
-          javap -cp "$JAR" net.minecraft.world.scores.Scoreboard net.minecraft.server.ServerScoreboard | grep -iE 'team|class '
-          ls ~/.gradle/caches/modules-2/files-2.1/ | grep -iE 'mixin|fabric'
+      - run: curl -s https://maven.nucleoid.xyz/eu/pb4/placeholder-api/maven-metadata.xml | grep -oE '<version>[^<]*26\.[0-9.]*[^<]*</version>' | tail -15
