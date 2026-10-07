@@ -19,4 +19,9 @@ jobs:
           echo "JAR=$JAR"
           unzip -l "$JAR" | grep -E 'TeamColor|scores/(PlayerTeam|Team|Scoreboard)\.class|chat/(Style|TextColor)\.class' 
           for c in $(unzip -l "$JAR" | grep -oE 'net/minecraft/[A-Za-z/]*TeamColor[A-Za-z$]*\.class'); do javap -cp "$JAR" "${c%.class}"; done
-          javap -cp "$JAR" net.minecraft.ChatFormatting net.minecraft.world.scores.PlayerTeam net.minecraft.network.chat.Style net.minecraft.network.chat.TextColor
+          P=net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket
+          javap -p -cp "$JAR" $P '$P$Entry' '$P$Action' net.minecraft.server.network.ServerCommonPacketListenerImpl net.minecraft.server.network.ServerGamePacketListenerImpl net.minecraft.network.Connection | grep -vE 'lambda\$'
+          javap -cp "$JAR" net.minecraft.server.level.ServerPlayer | grep -iE 'tablist|displayname|class '
+          javap -cp "$JAR" net.minecraft.server.players.PlayerList | grep -iE 'broadcast|getPlayer\('
+          javap -cp "$JAR" net.minecraft.world.scores.Scoreboard net.minecraft.server.ServerScoreboard | grep -iE 'team|class '
+          ls ~/.gradle/caches/modules-2/files-2.1/ | grep -iE 'mixin|fabric'
