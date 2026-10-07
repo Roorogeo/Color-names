@@ -18,6 +18,11 @@ Each color is a scoreboard team named `namecolor_<color>`. Teams are saved with 
 colors stay after a restart. Because a player can only be on one team, picking a color moves the
 player off any other team they were on.
 
+Tab list and rank mods often give players a custom tab list name, which normally hides team
+colors. To keep the color visible, this mod applies it to the tab list name directly. Extra text
+from those mods, such as rank prefixes, is kept, and any part of it without its own color takes
+the name color.
+
 Only the server needs the mod. Players can join with an unmodded client.
 
 ## Requirements
